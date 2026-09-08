@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WildLens - Platform Monitoring Keanekaragaman Hayati</title>
+    
+    <!-- Favicon / Logo Tab -->
+    <link rel="icon" type="image/png" href="logo-wl.png">
+    <link rel="shortcut icon" type="image/png" href="logo-wl.png">
+    <link rel="apple-touch-icon" href="logo-wl.png">
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#059669">
+    <link rel="icon" type="image/png" href="logo-wl.png">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css"/>
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <div id="splashScreen" class="splash-screen">
+        <div class="splash-content">
+            <div class="splash-logo-img"><img src="logo-wl.png" alt="WildLens Logo"></div>
+            <h2>WildLens</h2>
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <header class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <div class="logo-box-img"><img src="logo-wl.png" alt="WildLens"></div>
+                <div class="brand-text-group">
+                    <span class="brand-title">WildLens</span>
+                    <span class="brand-subtitle">Biodiversity Monitor</span>
+                </div>
+                <span id="networkBadge" class="network-badge online"><span class="pulse-dot"></span> <span id="networkText">Online</span></span>
+            </div>
+            
+            <button class="menu-toggle" id="mobileMenuBtn" aria-label="Buka menu navigasi" aria-expanded="false">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+
+            <nav class="nav-menu" id="navMenu">
+                <ul class="nav-links">
+                    <li><button type="button" class="nav-btn active" onclick="switchTab('home-tab', this)"><i class="fa-solid fa-house"></i> Beranda</button></li>
+                    <li><button type="button" class="nav-btn" onclick="switchTab('form-tab', this)"><i class="fa-solid fa-plus-circle"></i> Pendataan</button></li>
+                    <li><button type="button" class="nav-btn" onclick="switchTab('draft-tab', this)"><i class="fa-solid fa-box-archive"></i> Draft (<span id="draftCount">0</span>)</button></li>
+                    <li><button type="button" class="nav-btn" onclick="switchTab('about-tab', this)"><i class="fa-solid fa-circle-info"></i> Tentang</button></li>
+                    <li><button type="button" class="nav-btn btn-login-nav" id="nav-admin" onclick="switchTab('admin-login-tab', this)"><i class="fa-solid fa-lock"></i> Admin</button></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-wrapper">
+        <section id="home-tab" class="tab-content active">
+            <div class="hero-section">
+                <h1>Pantau, Catat, dan Lestarikan.</h1>
+                <p>Platform untuk pemetaan keanekaragaman hayati secara <b>real-time</b>.</p>
+                
+                <div class="hero-stats" id="heroStatsContainer">
+                    <div class="stat-box"><i class="fa-solid fa-seedling"></i><h3 id="publicFlora" class="skeleton-text">0</h3><span>Flora</span></div>
+                    <div class="stat-box"><i class="fa-solid fa-paw"></i><h3 id="publicFauna" class="skeleton-text">0</h3><span>Fauna</span></div>
+                    <div class="stat-box"><i class="fa-solid fa-dna"></i><h3 id="publicUniqueSpecies" class="skeleton-text">0</h3><span>Spesies Unik</span></div>
+                    <div class="stat-box"><i class="fa-solid fa-users-viewfinder"></i><h3 id="publicTotalIndividu" class="skeleton-text">0</h3><span>Total Individu</span></div>
+                </div>
+            </div>
+
+            <div class="card map-card">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-earth-asia"></i> Pemetaan Geospasial</h2>
+                    <button class="btn btn-outline btn-sm" id="btnLokasiSaya"><i class="fa-solid fa-crosshairs"></i> Lokasi Saya</button>
+                </div>
+                <div class="map-toolbar">
+                    <div class="map-filters">
+                        <label><input type="checkbox" id="filterFlora" checked> Flora</label>
+                        <label><input type="checkbox" id="filterFauna" checked> Fauna</label>
+                    </div>
+                    <div class="map-legend">
+                        <span class="legend-item"><i class="fa-solid fa-circle" style="color:#059669"></i> Flora</span>
+                        <span class="legend-item"><i class="fa-solid fa-circle" style="color:#2563eb"></i> Fauna</span>
+                        <span class="legend-item"><i class="fa-solid fa-circle" style="color:#f59e0b; opacity:0.7;"></i> Cluster</span>
+                    </div>
+                </div>
+                <div class="map-frame"><div id="map"></div></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h2><i class="fa-solid fa-clock-rotate-left"></i> Pengamatan Terbaru</h2></div>
+                <div id="recentObservationsContainer" class="recent-obs-grid">
+                    <div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="form-tab" class="tab-content">
+            <div class="card form-container">
+                <div class="card-header">
+                    <h2 id="formTitle"><i class="fa-solid fa-clipboard-list"></i> Form Pendataan</h2>
+                    <p class="subtitle">Kirimkan observasi dengan data ilmiah.</p>
+                </div>
+                
+                <form id="bioForm">
+                    <input type="hidden" id="editId" value="">
+                    
+                    <div class="form-grid-2">
+                        <div class="input-group">
+                            <label for="kategori">Kategori Spesies *</label>
+                            <select id="kategori" required>
+                                <option value="" disabled selected>Pilih kategori...</option>
+                                <option value="Flora">🌿 Flora</option>
+                                <option value="Fauna">🐾 Fauna</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="jenisHabitat">Jenis Habitat *</label>
+                            <select id="jenisHabitat" required>
+                                <option value="" disabled selected>Pilih jenis habitat...</option>
+                                <option value="Hutan">Hutan</option><option value="Mangrove">Mangrove</option>
+                                <option value="Sungai">Sungai</option><option value="Rawa">Rawa</option>
+                                <option value="Perkebunan">Perkebunan</option><option value="Permukiman">Permukiman</option>
+                                <option value="Pesisir">Pesisir</option><option value="Lainnya">Lainnya</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="input-group">
+                            <label for="namaLokal">Nama Lokal Spesies *</label>
+                            <input type="text" id="namaLokal" placeholder="Contoh: Bekantan" minlength="2" maxlength="100" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="namaIlmiah">Nama Ilmiah / Latin</label>
+                            <input type="text" id="namaIlmiah" placeholder="Contoh: Nasalis larvatus" maxlength="100">
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="input-group">
+                            <label for="tanggal">Waktu Pencatatan (WITA) *</label>
+                            <div class="flex-input">
+                                <input type="datetime-local" id="tanggal" required>
+                                <button type="button" id="btnNowTime" class="btn btn-outline" title="Gunakan waktu sekarang"><i class="fa-solid fa-clock"></i></button>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="jumlah">Jumlah Individu / Koloni *</label>
+                            <input type="number" id="jumlah" min="1" max="100000" value="1" required>
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="input-group">
+                            <label for="kondisiHabitat">Kondisi Integritas Habitat *</label>
+                            <select id="kondisiHabitat" required>
+                                <option value="" disabled selected>Pilih kondisi...</option>
+                                <option value="Sangat Baik">Sangat Baik (Alami)</option>
+                                <option value="Sedang">Sedang (Terfragmentasi)</option>
+                                <option value="Buruk">Buruk (Tercemar/Rusak)</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="statusIdentifikasi">Status Identifikasi *</label>
+                            <select id="statusIdentifikasi" required>
+                                <option value="Terverifikasi Lapangan">Terverifikasi Lapangan</option>
+                                <option value="Estimasi / Visual">Estimasi / Visual</option>
+                                <option value="Butuh Verifikasi Pakar">Butuh Verifikasi Pakar</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="lokasi">Koordinat GPS (Latitude, Longitude) *</label>
+                        <div class="flex-input">
+                            <input type="text" id="lokasi" placeholder="Koordinat" readonly required>
+                            <button type="button" id="btnLokasi" class="btn btn-outline"><i class="fa-solid fa-location-crosshairs"></i> Dapatkan</button>
+                        </div>
+                        <small id="gpsAccuracyInfo" class="subtitle" style="display:block; margin-top:4px;"></small>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="catatan">Catatan Ekologis (Perilaku, Lingkungan, dll.)</label>
+                        <textarea id="catatan" rows="3" placeholder="Tulis pengamatan spesifik (maks 500 karakter)..." maxlength="500"></textarea>
+                    </div>
+
+                    <div class="input-group photo-upload-group">
+                        <label for="foto">Foto (Maks 5MB) *</label>
+                        <input type="file" id="foto" accept="image/jpeg, image/png, image/webp">
+                        <div class="photo-preview-box" id="previewBox" style="display: none;">
+                            <img id="previewFoto" src="" alt="Preview Bukti">
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" id="btnBatalEdit" class="btn btn-danger" style="display:none;">Batal Edit</button>
+                        <button type="submit" class="btn btn-primary w-100" id="btnSubmit"><i class="fa-solid fa-floppy-disk"></i> Simpan ke Draft</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section id="draft-tab" class="tab-content">
+            <div class="draft-header-section">
+                <div>
+                    <h2><i class="fa-solid fa-database"></i> Basis Data Lokal (Offline)</h2>
+                    <p class="subtitle">Disimpan di memori perangkat (Local Storage).</p>
+                </div>
+                <button id="btnUpload" class="btn btn-success" style="display:none;">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Sinkronisasi
+                </button>
+            </div>
+            <div id="syncProgressBox" style="display:none; margin-bottom: 20px;">
+                <p id="syncStatusText" style="font-weight:600; margin-bottom:5px; font-size:0.9rem;">Status Sinkronisasi...</p>
+                <div class="progress-bar-container">
+                    <div id="syncProgressBar" class="progress-bar-fill"></div>
+                </div>
+            </div>
+            <div id="draftList" class="data-grid"></div>
+        </section>
+
+        <section id="about-tab" class="tab-content">
+            <div class="card about-card">
+                <div class="about-header text-center">
+                    <div class="logo-box-img large-logo-img"><img src="logo-wl.png" alt="WildLens Logo"></div>
+                    <h2>WildLens</h2>
+                    <p class="lead">Platform Monitoring Biodiversitas.</p>
+                </div>
+                <div class="about-content">
+                    <p><b>WildLens</b> dirancang untuk menyelesaikan masalah pencatatan manual di lapangan yang rentan hilang dan tidak akurat.</p>
+                </div>
+                
+                <h3 class="team-title text-center">Tim Pengembang</h3>
+            <div class="team-leader-section">
+                <div class="team-member leader">
+                    <div class="member-photo placeholder-3x4"><img src="foto/jepry.jpg" alt="Jepry"></div>
+                    <h4>M. Jepry</h4>
+                    <span class="nim">2610516210003</span>
+                    <span class="role">Ketua Tim</span>
+                </div>
+            </div>
+            <div class="team-grid members-grid">
+                <div class="team-member">
+                    <div class="member-photo placeholder-3x4"><img src="foto/husna.jpg" alt="Husna"></div>
+                    <h4>Asmaul Husna</h4>
+                    <span class="nim">26105162100XX</span>
+                    <span class="role">Anggota Tim</span>
+                </div>
+                <div class="team-member">
+                    <div class="member-photo placeholder-3x4"><img src="foto/dewi.jpg" alt="Dewi"></div>
+                    <h4>Dewi Indah N.F.</h4>
+                    <span class="nim">26105162100XX</span>
+                    <span class="role">Anggota Tim</span>
+                </div>
+                <div class="team-member">
+                    <div class="member-photo placeholder-3x4"><img src="foto/hidayah.jpg" alt="Hidayah"></div>
+                    <h4>Hidayah Putri R.</h4>
+                    <span class="nim">26105162100XX</span>
+                    <span class="role">Anggota Tim</span>
+                </div>
+                <div class="team-member">
+                    <div class="member-photo placeholder-3x4"><img src="foto/syafaraz.jpg" alt="Syafaraz"></div>
+                    <h4>M. Syafaraz</h4>
+                    <span class="nim">26105162100XX</span>
+                    <span class="role">Anggota Tim</span>
+                </div>
+                <div class="team-member">
+                    <div class="member-photo placeholder-3x4"><img src="foto/nisa.jpg" alt="Jamiatunnisa"></div>
+                    <h4>Jamiatunnisa</h4>
+                    <span class="nim">26105162100XX</span>
+                    <span class="role">Anggota Tim</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="admin-login-tab" class="tab-content">
+            <div class="login-wrapper">
+                <div class="card login-card">
+                    <div class="login-icon"><i class="fa-solid fa-fingerprint"></i></div>
+                    <h2>Otorisasi Admin</h2>
+                    <div class="input-group">
+                        <label for="email" style="display:none">Email</label>
+                        <input type="email" id="email" placeholder="Alamat Email">
+                    </div>
+                    <div class="input-group">
+                        <label for="password" style="display:none">Password</label>
+                        <input type="password" id="password" placeholder="Kata Sandi">
+                    </div>
+                    <button id="btnLogin" class="btn btn-primary w-100">Login Akses</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="admin-dashboard-tab" class="tab-content">
+            <div class="admin-header">
+                <div>
+                    <h2><i class="fa-solid fa-server"></i> Command Center</h2>
+                    <p class="subtitle">Validasi Data & Analitik Lanjutan</p>
+                </div>
+                <button id="btnLogout" class="btn btn-danger"><i class="fa-solid fa-power-off"></i> Logout</button>
+            </div>
+            
+            <div class="kpi-grid">
+                <div class="kpi-card"><div class="kpi-icon flora"><i class="fa-solid fa-seedling"></i></div><div class="kpi-data"><p>Total Flora</p><h3 id="adminTotFlora">0</h3></div></div>
+                <div class="kpi-card"><div class="kpi-icon fauna"><i class="fa-solid fa-paw"></i></div><div class="kpi-data"><p>Total Fauna</p><h3 id="adminTotFauna">0</h3></div></div>
+                <div class="kpi-card" style="background:#fffbeb;"><div class="kpi-icon" style="background:#fef3c7; color:#d97706;"><i class="fa-solid fa-hourglass-half"></i></div><div class="kpi-data"><p>Menunggu Verifikasi</p><h3 id="adminPending">0</h3></div></div>
+            </div>
+
+            <div class="charts-container">
+                <div class="card chart-box"><h3>Komposisi Biodiversitas</h3><canvas id="kategoriChart"></canvas></div>
+                <div class="card chart-box"><h3>Status Habitat Observasi</h3><canvas id="habitatChart"></canvas></div>
+            </div>
+
+            <div class="card table-card">
+                <div class="table-header-tools">
+                    <h3><i class="fa-solid fa-table"></i> Manajemen Basis Data</h3>
+                    <div class="tools-right">
+                        <input type="text" id="searchInput" placeholder="Cari spesies / lokasi..." class="search-bar">
+                        <select id="filterKategoriAdmin" class="search-bar" style="max-width:130px;">
+                            <option value="">Semua Kategori</option><option value="Flora">Flora</option><option value="Fauna">Fauna</option>
+                        </select>
+                        <button id="btnExport" class="btn btn-success"><i class="fa-solid fa-file-csv"></i> CSV</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table id="dataTable" class="admin-table">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable('kategori')" style="width: 75px;">Kat. <i class="fa-solid fa-sort"></i></th>
+                                <th onclick="sortTable('namaLokal')">Spesies <i class="fa-solid fa-sort"></i></th>
+                                <th onclick="sortTable('tanggal')" style="width: 110px;">Waktu <i class="fa-solid fa-sort"></i></th>
+                                <th>Lokasi (GPS)</th>
+                                <th onclick="sortTable('jumlah')" style="width: 60px;">Pop. <i class="fa-solid fa-sort"></i></th>
+                                <th style="width: 70px;">Eviden</th>
+                                <th style="width: 130px;">Status</th>
+                                <th style="width: 130px;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr><td colspan="8" class="text-center" style="padding: 30px;">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination-controls">
+                    <button class="btn btn-outline btn-sm" id="btnPrevPage" disabled>Sebelumnya</button>
+                    <span id="pageInfo">Halaman 1 / 1</span>
+                    <button class="btn btn-outline btn-sm" id="btnNextPage" disabled>Berikutnya</button>
+                    <select id="rowsPerPage" class="search-bar" style="padding: 5px; min-width:60px;">
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="fat-footer">
+        <div class="footer-container">
+            <div class="footer-col brand-col">
+                <h3><img src="logo-wl.png" alt="WildLens" class="footer-logo-img"> WildLens</h3>
+                <p>Platform monitoring biodiversitas terdesentralisasi, memanfaatkan teknologi PWA dan Cloud Architecture untuk ekosistem berkelanjutan.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Informasi & Metodologi</h4>
+                <ul>
+                    <li><a href="#" onclick="switchTab('about-tab'); return false;">Tentang Proyek</a></li>
+                    <li><a href="#">Privasi Data Geospasial</a></li>
+                    <li><a href="#">Panduan Citizen Science</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Teknologi & Engine</h4>
+                <p><i class="fa-solid fa-database"></i> Firebase & IndexedDB</p>
+                <p><i class="fa-solid fa-map-location-dot"></i> Leaflet JS & OSM</p>
+                <p><i class="fa-solid fa-graduation-cap"></i> Dasar Rekayasa Bioproses</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 WildLens Project System - Tim Pengembang Mahasiswa.</p>
+        </div>
+    </footer>
+
+    <div id="customModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-content">
+            <div id="modalIcon" class="modal-icon"></div>
+            <h3 id="modalTitle">Judul</h3>
+            <p id="modalMessage">Pesan</p>
+            <div id="modalActions" style="margin-top: 20px;">
+                <button type="button" class="btn btn-primary w-100" onclick="closeModal()">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="detailModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="detailModalTitle">
+        <div class="modal-content" style="max-width: 500px; text-align: left;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--color-border); padding-bottom:10px; margin-bottom:15px;">
+                <h3 id="detailModalTitle" style="margin:0; font-size:1.2rem;">Detail Observasi</h3>
+                <button type="button" class="btn btn-outline btn-sm" onclick="closeDetailModal()">✕</button>
+            </div>
+            <div id="detailModalBody" style="max-height: 70vh; overflow-y: auto;"></div>
+            <button type="button" class="btn btn-primary w-100" style="margin-top:15px;" onclick="closeDetailModal()">Tutup</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <script type="module" src="app.js"></script>
+</body>
+</html>
