@@ -389,16 +389,25 @@ document.getElementById('btnUpload').addEventListener('click', async () => {
 });
 
 // Data Publik & Beranda
-async function initGlobalData() {
-    try {
-        const qSnap = await getDocs(collection(db, "biodiversity"));
+// ---------------------------------------------------------
+// DATA PUBLIK & BERANDA (Real-time dengan onSnapshot)
+// ---------------------------------------------------------
+let unsubscribePublic = null;
+
+function initGlobalData() {
+    if (unsubscribePublic) unsubscribePublic();
+    
+    unsubscribePublic = onSnapshot(query(collection(db, "biodiversity")), (qSnap) => {
         globalFetchedMarkers = [];
         let floraCount = 0, faunaCount = 0, totInd = 0;
         let uSpec = new Set();
 
         qSnap.forEach((ds) => {
-            const d = ds.data(); d.docId = ds.id;
+            const d = ds.data(); 
+            d.docId = ds.id; 
             globalFetchedMarkers.push(d);
+            
+            // Hanya hitung dan tampilkan data yang sudah berstatus 'Terverifikasi' di sisi publik
             if(d.statusVerifikasi === 'Terverifikasi') { 
                 if (d.kategori === 'Flora') floraCount++; else faunaCount++;
                 totInd += d.jumlah;
@@ -406,15 +415,21 @@ async function initGlobalData() {
             }
         });
 
+        // Hapus efek skeleton loading jika ada
         document.querySelectorAll('.skeleton-text').forEach(el => el.classList.remove('skeleton-text'));
+        
+        // Perbarui angka statistik beranda secara instan
         document.getElementById('publicFlora').innerText = floraCount;
         document.getElementById('publicFauna').innerText = faunaCount;
         document.getElementById('publicUniqueSpecies').innerText = uSpec.size;
         document.getElementById('publicTotalIndividu').innerText = totInd;
 
+        // Render ulang peta dan daftar pengamatan terbaru secara real-time
         renderFilteredMap();
         renderRecentObservations(globalFetchedMarkers.filter(x => x.statusVerifikasi === 'Terverifikasi'));
-    } catch (err) { console.error(err); }
+    }, (err) => {
+        console.error("Error fetching public data realtime:", err);
+    });
 }
 initGlobalData();
 
